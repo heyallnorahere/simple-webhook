@@ -1,0 +1,2 @@
+# simple-webhook
+Just a little idea I had at 11 pm (I am very tired) and I had nothing better to do, so here it is. For now, it only works on Windows. The first parameter is the URL of the webhook. I'm tired. Goodnight.
