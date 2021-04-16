@@ -1,0 +1,18 @@
+# binaries
+*.exe
+*.dll
+*.lib
+# vendor folder
+!vendor/**
+# binaries cont.
+bin/
+bin-int/
+obj/
+# project files
+*.sln
+*.*proj*
+.vs/**
+*.xcworkspace/
+Makefile
+*.make
+.vscode/

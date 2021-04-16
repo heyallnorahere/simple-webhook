@@ -1,0 +1,6 @@
+[submodule "vendor/curl"]
+	path = vendor/curl
+	url = https://github.com/curl/curl
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json
