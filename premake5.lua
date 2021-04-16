@@ -68,6 +68,7 @@ kind "ConsoleApp"
     files {
         "src/**.cpp",
         "src/**.h",
+        "stillalive.txt"
     }
     sysincludedirs {
         "vendor/json/include",
@@ -79,6 +80,10 @@ kind "ConsoleApp"
     filter "system:windows"
         postbuildcommands {
             '{COPY} "C:/Program Files/OpenSSL/bin/*.dll" "%{cfg.targetdir}"',
+        }
+    filter "action:xcode4"
+        postbuildcommands {
+            '{COPY} "stillalive.txt" "%{cfg.targetdir}"'
         }
     filter "configurations:Debug"
         symbols "on"
