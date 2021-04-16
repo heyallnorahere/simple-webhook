@@ -2,9 +2,11 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 #include <cassert>
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
+// read a plain text file
 std::string read_file(const std::string& path) {
 	std::ifstream file(path);
 	std::stringstream contents;
@@ -14,6 +16,22 @@ std::string read_file(const std::string& path) {
 	}
 	file.close();
 	return contents.str();
+}
+// read a json file
+nlohmann::json read_json(const std::string& path) {
+	std::ifstream file(path);
+	nlohmann::json contents;
+	file >> contents;
+	file.close();
+	return contents;
+}
+struct line {
+	std::string content;
+	double delay;
+};
+void from_json(const nlohmann::json& j, line& l) {
+	j["content"].get_to(l.content);
+	j["delay"].get_to(l.delay);
 }
 // data to pass to read_callback
 struct read_callback_data {
@@ -37,11 +55,24 @@ std::string create_discord_request(const std::string& content) {
 	request["content"] = content;
 	return request.dump();
 }
+void send_message(CURL* c, const std::string& content) {
+	// create a discord request
+	read_callback_data data;
+	data.data = create_discord_request(content);
+	data.pos = 0;
+	// send the request to discord
+	curl_easy_setopt(c, CURLOPT_READDATA, &data);
+	assert(curl_easy_perform(c) == CURLE_OK);
+}
+double get_time() {
+	return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
 int main(int argc, const char* argv[]) {
 	// check to see that there is at least one additional argument
 	assert(argc >= 2);
 	// read Still Alive lyrics from a file
 	std::string lyrics = read_file("stillalive.txt");
+	std::vector<line> delayed_lyrics = read_json("stillalive.json").get<std::vector<line>>();
 	// init libcurl
 	CURL* c = curl_easy_init();
 	// set the url to the passed argument
@@ -55,15 +86,15 @@ int main(int argc, const char* argv[]) {
 	curl_easy_setopt(c, CURLOPT_HTTPHEADER, list);
 	// we are sending a post request
 	curl_easy_setopt(c, CURLOPT_POST, 1L);
-	// set readfunction and readdata
-	read_callback_data data;
-	data.data = create_discord_request(lyrics);
-	data.pos = 0;
+	// set readfunction
 	curl_easy_setopt(c, CURLOPT_READFUNCTION, read_callback);
-	curl_easy_setopt(c, CURLOPT_READDATA, &data);
-	// send the request
-	CURLcode code = curl_easy_perform(c);
-	assert(code == CURLE_OK);
+	// start dumping lyrics
+	double start_time = get_time();
+	for (const auto& l : delayed_lyrics) {
+		while (get_time() - start_time < l.delay) { /* wait */ }
+		send_message(c, l.content);
+		start_time = get_time();
+	}
 	// free header list
 	curl_slist_free_all(list);
 	// clean up libcurl
